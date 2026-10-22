@@ -1,0 +1,14 @@
+{
+  "codeowners": [
+    "@FloreaIonut"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/FloreaIonut/premier-energy-ha",
+  "domain": "premier_energy",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/FloreaIonut/premier-energy-ha/issues",
+  "name": "Premier Energy",
+  "requirements": [],
+  "version": "0.1.0"
+}

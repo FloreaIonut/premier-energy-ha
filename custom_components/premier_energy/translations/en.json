@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Premier Energy",
+        "description": "Account details from my.premierenergy.ro.",
+        "data": { "email": "Email", "password": "Password" }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate Premier Energy",
+        "description": "The password is no longer valid. Enter the new password.",
+        "data": { "password": "Password" }
+      }
+    },
+    "error": {
+      "invalid_auth": "Wrong email or password.",
+      "cannot_connect": "Cannot connect to the Premier Energy portal."
+    },
+    "abort": {
+      "already_configured": "Account is already configured.",
+      "reauth_successful": "Password updated."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "ultima_factura_suma": { "name": "Last invoice" },
+      "scadenta": { "name": "Due date" },
+      "data_emiterii": { "name": "Issue date" },
+      "numar_factura": { "name": "Invoice number" },
+      "numar_facturi": { "name": "Invoice count" }
+    }
+  }
+}
