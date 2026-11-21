@@ -313,4 +313,18 @@ class PremierEnergyApi:
         """Locuri de consum + facturi, grupate pe PoD de gaz."""
         places = await self._get("locConsum", {"cuAdresa": "true"})
         invoices = await self._get("facturi", {})
+        # DEBUG temporar: aflăm numele câmpurilor din noul API (date proprii, doar în logul local).
+        if invoices:
+            _LOGGER.warning("PE_DEBUG factura[0]=%s", json.dumps(invoices[0], ensure_ascii=False)[:1200])
+        if places:
+            _LOGGER.warning("PE_DEBUG locConsum[0] chei=%s", sorted(places[0].keys()))
+        try:
+            readings = await self._get("readings", {})
+            _LOGGER.warning(
+                "PE_DEBUG readings len=%s sample=%s",
+                len(readings),
+                json.dumps(readings[0], ensure_ascii=False)[:800] if readings else None,
+            )
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("PE_DEBUG readings err=%s", err)
         return normalize(places, invoices)
