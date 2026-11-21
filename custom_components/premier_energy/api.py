@@ -394,10 +394,14 @@ class PremierEnergyApi:
         invoices = await self._get("facturi", {})
         data = normalize(places, invoices)
 
-        # Istoric autocitiri (index) pe contract.
-        pod_contract = {
-            p.get("PoD"): p.get("cont_contract") for p in places if p.get("PoD")
-        }
+        # Istoric autocitiri (index) pe contractul de furnizare (CONTR_FURN).
+        def _contract(p: dict) -> str | None:
+            cf = p.get("CONTR_FURN")
+            if cf and str(cf) != "0":
+                return cf
+            return p.get("cont_contract")
+
+        pod_contract = {p.get("PoD"): _contract(p) for p in places if p.get("PoD")}
         for pod in data:
             contract = pod_contract.get(pod)
             if not contract:
