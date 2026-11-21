@@ -66,6 +66,23 @@ DESCRIPTIONS: tuple[PremierSensorDescription, ...] = (
         translation_key="numar_facturi",
         value_fn=lambda f: len(f),
     ),
+    PremierSensorDescription(
+        key="sold_de_plata",
+        translation_key="sold_de_plata",
+        device_class=SensorDeviceClass.MONETARY,
+        native_unit_of_measurement="RON",
+        suggested_display_precision=2,
+        value_fn=lambda f: round(
+            sum(i["rest"] for i in f if isinstance(i.get("rest"), (int, float))), 2
+        ),
+    ),
+    PremierSensorDescription(
+        key="facturi_neplatite",
+        translation_key="facturi_neplatite",
+        value_fn=lambda f: sum(
+            1 for i in f if isinstance(i.get("rest"), (int, float)) and i["rest"] > 0
+        ),
+    ),
 )
 
 
@@ -104,7 +121,7 @@ class PremierSensor(CoordinatorEntity[PremierEnergyCoordinator], SensorEntity):
             name=f"Gaz {pod}",
             manufacturer="Premier Energy",
             model="Contract gaze",
-            configuration_url="https://my.premierenergy.ro",
+            configuration_url="https://app.premierenergy.ro",
         )
 
     @property

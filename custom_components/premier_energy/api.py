@@ -91,11 +91,28 @@ def is_gas_pod(pod: str | None) -> bool:
     return bool(pod) and pod.upper().startswith(GAS_POD_PREFIX)
 
 
-def _amount(inv: dict) -> Any:
-    """Suma facturii — numele câmpului poate diferi între versiuni de API."""
-    for key in ("TOTAL_AMNT", "Suma", "SUMA", "amount", "suma"):
-        if inv.get(key) not in (None, ""):
-            return inv.get(key)
+def _num(val: Any) -> float | None:
+    try:
+        return round(float(val), 2)
+    except (TypeError, ValueError):
+        return None
+
+
+def _amount(inv: dict) -> float | None:
+    """Totalul facturii (portalul app.premierenergy.ro: INV_AMT_TOTAL / factCurenta)."""
+    for key in ("INV_AMT_TOTAL", "factCurenta", "TOTAL_AMNT", "Suma", "amount"):
+        n = _num(inv.get(key))
+        if n is not None:
+            return n
+    return None
+
+
+def _rest(inv: dict) -> float | None:
+    """Rest de plată (restPlata / TO_PAY)."""
+    for key in ("restPlata", "TO_PAY", "rest", "SOLD"):
+        n = _num(inv.get(key))
+        if n is not None:
+            return n
     return None
 
 
@@ -118,12 +135,16 @@ def normalize(places: list[dict], invoices: list[dict]) -> dict[str, dict[str, A
         for inv in invoices:
             if inv.get("POD") != pod:
                 continue
+            rest = _rest(inv)
             items.append(
                 {
                     "numar": inv.get("OPBEL"),
                     "emisa": (inv.get("BLDAT") or "")[:10] or None,
                     "scadenta": (inv.get("FAEDN") or "")[:10] or None,
                     "suma": _amount(inv),
+                    "rest": rest,
+                    "platita": (rest <= 0) if rest is not None else None,
+                    "moneda": inv.get("WAERS"),
                     "pdf": _has_pdf(inv),
                 }
             )
@@ -313,18 +334,4 @@ class PremierEnergyApi:
         """Locuri de consum + facturi, grupate pe PoD de gaz."""
         places = await self._get("locConsum", {"cuAdresa": "true"})
         invoices = await self._get("facturi", {})
-        # DEBUG temporar: aflăm numele câmpurilor din noul API (date proprii, doar în logul local).
-        if invoices:
-            _LOGGER.warning("PE_DEBUG factura[0]=%s", json.dumps(invoices[0], ensure_ascii=False)[:1200])
-        if places:
-            _LOGGER.warning("PE_DEBUG locConsum[0] chei=%s", sorted(places[0].keys()))
-        try:
-            readings = await self._get("readings", {})
-            _LOGGER.warning(
-                "PE_DEBUG readings len=%s sample=%s",
-                len(readings),
-                json.dumps(readings[0], ensure_ascii=False)[:800] if readings else None,
-            )
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.warning("PE_DEBUG readings err=%s", err)
         return normalize(places, invoices)

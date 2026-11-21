@@ -27,7 +27,9 @@
       "scadenta": { "name": "Due date" },
       "data_emiterii": { "name": "Issue date" },
       "numar_factura": { "name": "Invoice number" },
-      "numar_facturi": { "name": "Invoice count" }
+      "numar_facturi": { "name": "Invoice count" },
+      "sold_de_plata": { "name": "Amount due" },
+      "facturi_neplatite": { "name": "Unpaid invoices" }
     }
   }
 }
