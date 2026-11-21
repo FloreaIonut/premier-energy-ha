@@ -4,12 +4,17 @@
       "user": {
         "title": "Premier Energy",
         "description": "Account details from my.premierenergy.ro.",
-        "data": { "email": "Email", "password": "Password" }
+        "data": {
+          "email": "Email",
+          "password": "Password"
+        }
       },
       "reauth_confirm": {
         "title": "Reauthenticate Premier Energy",
         "description": "The password is no longer valid. Enter the new password.",
-        "data": { "password": "Password" }
+        "data": {
+          "password": "Password"
+        }
       }
     },
     "error": {
@@ -23,13 +28,33 @@
   },
   "entity": {
     "sensor": {
-      "ultima_factura_suma": { "name": "Last invoice" },
-      "scadenta": { "name": "Due date" },
-      "data_emiterii": { "name": "Issue date" },
-      "numar_factura": { "name": "Invoice number" },
-      "numar_facturi": { "name": "Invoice count" },
-      "sold_de_plata": { "name": "Amount due" },
-      "facturi_neplatite": { "name": "Unpaid invoices" }
+      "ultima_factura_suma": {
+        "name": "Last invoice"
+      },
+      "scadenta": {
+        "name": "Due date"
+      },
+      "data_emiterii": {
+        "name": "Issue date"
+      },
+      "numar_factura": {
+        "name": "Invoice number"
+      },
+      "numar_facturi": {
+        "name": "Invoice count"
+      },
+      "sold_de_plata": {
+        "name": "Amount due"
+      },
+      "facturi_neplatite": {
+        "name": "Unpaid invoices"
+      },
+      "index_curent": {
+        "name": "Current index"
+      },
+      "consum_ultima_luna": {
+        "name": "Last month consumption"
+      }
     }
   }
 }

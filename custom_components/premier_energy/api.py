@@ -153,6 +153,64 @@ def normalize(places: list[dict], invoices: list[dict]) -> dict[str, dict[str, A
     return result
 
 
+def normalize_readings(readings: list[dict]) -> list[dict[str, Any]]:
+    """Istoric autocitiri index: {data, index, transmis, status}, cele mai noi întâi."""
+    items = []
+    for r in readings or []:
+        items.append(
+            {
+                "data": (str(r.get("timestamp") or ""))[:10] or None,
+                "index": r.get("value"),
+                "transmis": r.get("source"),
+                "status": r.get("status"),
+            }
+        )
+    items.sort(key=lambda x: x["data"] or "", reverse=True)
+    return items
+
+
+def _consum_contract(loc: dict) -> list[dict]:
+    """Lista de consum a contractului de furnizare (sau primul)."""
+    contracte = loc.get("contracte") or []
+    if contracte:
+        furn = next(
+            (c for c in contracte if str(c.get("ZZFE_STARE_SERVICIU", "")).lower() == "furnizare"),
+            contracte[0],
+        )
+        return furn.get("consum") or []
+    return loc.get("consum") or []
+
+
+def normalize_consum(resp: Any, pods: list[str]) -> dict[str, list[dict[str, Any]]]:
+    """Istoric consum kWh pe PoD: {pod: [{start, citire, kwh}]}, cele mai noi întâi."""
+    locations = resp if isinstance(resp, list) else [resp] if isinstance(resp, dict) else []
+    result: dict[str, list[dict[str, Any]]] = {}
+    for loc in locations:
+        pod = loc.get("PoD") or loc.get("pod") or loc.get("codlocConsum")
+        rows = []
+        for c in _consum_contract(loc):
+            mwh = c.get("consumMWH")
+            try:
+                kwh = round(float(mwh) * 1000)
+            except (TypeError, ValueError):
+                kwh = None
+            rows.append(
+                {
+                    "start": (str(c.get("dataStart") or ""))[:10] or None,
+                    "citire": (str(c.get("dataCitire") or ""))[:10] or None,
+                    "kwh": kwh,
+                }
+            )
+        rows.sort(key=lambda x: x["citire"] or "", reverse=True)
+        if pod:
+            result[pod] = rows
+    # Dacă există un singur loc și un singur PoD urmărit, asociază-le chiar dacă PoD-ul diferă.
+    if len(locations) == 1 and len(pods) == 1 and pods[0] not in result:
+        only = next(iter(result.values())) if result else []
+        result = {pods[0]: only}
+    return result
+
+
 class PremierEnergyApi:
     """Login B2C (auth-code + PKCE) + apeluri API, cu re-login automat."""
 
@@ -334,4 +392,30 @@ class PremierEnergyApi:
         """Locuri de consum + facturi, grupate pe PoD de gaz."""
         places = await self._get("locConsum", {"cuAdresa": "true"})
         invoices = await self._get("facturi", {})
-        return normalize(places, invoices)
+        data = normalize(places, invoices)
+
+        # Istoric autocitiri (index) pe contract.
+        pod_contract = {
+            p.get("PoD"): p.get("cont_contract") for p in places if p.get("PoD")
+        }
+        for pod in data:
+            contract = pod_contract.get(pod)
+            if not contract:
+                continue
+            try:
+                readings = await self._get("readings", {"contract": contract})
+                data[pod]["indexi"] = normalize_readings(readings)
+            except PremierEnergyError as err:
+                _LOGGER.debug("readings %s: %s", pod, err)
+                data[pod]["indexi"] = []
+
+        # Istoric consum (kWh).
+        try:
+            consum_resp = await self._get("consum", {})
+            consum_map = normalize_consum(consum_resp, list(data.keys()))
+            for pod in data:
+                data[pod]["consum"] = consum_map.get(pod, [])
+        except PremierEnergyError as err:
+            _LOGGER.debug("consum: %s", err)
+
+        return data

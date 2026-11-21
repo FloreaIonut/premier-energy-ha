@@ -28,11 +28,16 @@ def _to_date(value: str | None) -> date | None:
         return None
 
 
+def _facturi(d: dict) -> list[dict]:
+    return d.get("facturi") or []
+
+
 @dataclass(frozen=True, kw_only=True)
 class PremierSensorDescription(SensorEntityDescription):
-    """Descriere senzor + funcția de valoare (primește lista de facturi, nou -> vechi)."""
+    """Descriere senzor + funcția de valoare (primește dict-ul PoD: facturi/indexi/consum)."""
 
-    value_fn: Callable[[list[dict[str, Any]]], Any]
+    value_fn: Callable[[dict[str, Any]], Any]
+    attr_key: str | None = None
 
 
 DESCRIPTIONS: tuple[PremierSensorDescription, ...] = (
@@ -42,29 +47,30 @@ DESCRIPTIONS: tuple[PremierSensorDescription, ...] = (
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="RON",
         suggested_display_precision=2,
-        value_fn=lambda f: f[0]["suma"] if f else None,
+        value_fn=lambda d: _facturi(d)[0]["suma"] if _facturi(d) else None,
+        attr_key="facturi",
     ),
     PremierSensorDescription(
         key="scadenta",
         translation_key="scadenta",
         device_class=SensorDeviceClass.DATE,
-        value_fn=lambda f: _to_date(f[0]["scadenta"]) if f else None,
+        value_fn=lambda d: _to_date(_facturi(d)[0]["scadenta"]) if _facturi(d) else None,
     ),
     PremierSensorDescription(
         key="data_emiterii",
         translation_key="data_emiterii",
         device_class=SensorDeviceClass.DATE,
-        value_fn=lambda f: _to_date(f[0]["emisa"]) if f else None,
+        value_fn=lambda d: _to_date(_facturi(d)[0]["emisa"]) if _facturi(d) else None,
     ),
     PremierSensorDescription(
         key="numar_factura",
         translation_key="numar_factura",
-        value_fn=lambda f: f[0]["numar"] if f else None,
+        value_fn=lambda d: _facturi(d)[0]["numar"] if _facturi(d) else None,
     ),
     PremierSensorDescription(
         key="numar_facturi",
         translation_key="numar_facturi",
-        value_fn=lambda f: len(f),
+        value_fn=lambda d: len(_facturi(d)),
     ),
     PremierSensorDescription(
         key="sold_de_plata",
@@ -72,16 +78,32 @@ DESCRIPTIONS: tuple[PremierSensorDescription, ...] = (
         device_class=SensorDeviceClass.MONETARY,
         native_unit_of_measurement="RON",
         suggested_display_precision=2,
-        value_fn=lambda f: round(
-            sum(i["rest"] for i in f if isinstance(i.get("rest"), (int, float))), 2
+        value_fn=lambda d: round(
+            sum(i["rest"] for i in _facturi(d) if isinstance(i.get("rest"), (int, float))), 2
         ),
     ),
     PremierSensorDescription(
         key="facturi_neplatite",
         translation_key="facturi_neplatite",
-        value_fn=lambda f: sum(
-            1 for i in f if isinstance(i.get("rest"), (int, float)) and i["rest"] > 0
+        value_fn=lambda d: sum(
+            1 for i in _facturi(d) if isinstance(i.get("rest"), (int, float)) and i["rest"] > 0
         ),
+    ),
+    PremierSensorDescription(
+        key="index_curent",
+        translation_key="index_curent",
+        icon="mdi:counter",
+        value_fn=lambda d: (d.get("indexi") or [{}])[0].get("index") if d.get("indexi") else None,
+        attr_key="indexi",
+    ),
+    PremierSensorDescription(
+        key="consum_ultima_luna",
+        translation_key="consum_ultima_luna",
+        native_unit_of_measurement="kWh",
+        suggested_display_precision=0,
+        icon="mdi:fire",
+        value_fn=lambda d: (d.get("consum") or [{}])[0].get("kwh") if d.get("consum") else None,
+        attr_key="consum",
     ),
 )
 
@@ -125,20 +147,21 @@ class PremierSensor(CoordinatorEntity[PremierEnergyCoordinator], SensorEntity):
         )
 
     @property
-    def _invoices(self) -> list[dict[str, Any]]:
-        return (self.coordinator.data.get(self._pod) or {}).get("facturi", [])
+    def _data(self) -> dict[str, Any]:
+        return self.coordinator.data.get(self._pod) or {}
 
     @property
     def native_value(self) -> Any:
-        return self.entity_description.value_fn(self._invoices)
+        return self.entity_description.value_fn(self._data)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        if self.entity_description.key != "ultima_factura_suma":
+        key = self.entity_description.attr_key
+        if not key:
             return None
-        data = self.coordinator.data.get(self._pod) or {}
-        return {
-            "pod": self._pod,
-            "adresa": data.get("adresa"),
-            "facturi": self._invoices[:MAX_INVOICES_ATTR],
-        }
+        data = self._data
+        attrs: dict[str, Any] = {"pod": self._pod}
+        if key == "facturi":
+            attrs["adresa"] = data.get("adresa")
+        attrs[key] = (data.get(key) or [])[:MAX_INVOICES_ATTR]
+        return attrs

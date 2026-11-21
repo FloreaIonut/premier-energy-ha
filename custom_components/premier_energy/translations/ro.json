@@ -4,12 +4,17 @@
       "user": {
         "title": "Premier Energy",
         "description": "Datele contului de pe app.premierenergy.ro.",
-        "data": { "email": "Email", "password": "Parolă" }
+        "data": {
+          "email": "Email",
+          "password": "Parolă"
+        }
       },
       "reauth_confirm": {
         "title": "Reautentificare Premier Energy",
         "description": "Parola nu mai e validă. Introdu parola nouă.",
-        "data": { "password": "Parolă" }
+        "data": {
+          "password": "Parolă"
+        }
       }
     },
     "error": {
@@ -23,13 +28,33 @@
   },
   "entity": {
     "sensor": {
-      "ultima_factura_suma": { "name": "Ultima factură" },
-      "scadenta": { "name": "Scadență" },
-      "data_emiterii": { "name": "Data emiterii" },
-      "numar_factura": { "name": "Număr factură" },
-      "numar_facturi": { "name": "Număr facturi" },
-      "sold_de_plata": { "name": "Sold de plată" },
-      "facturi_neplatite": { "name": "Facturi neplătite" }
+      "ultima_factura_suma": {
+        "name": "Ultima factură"
+      },
+      "scadenta": {
+        "name": "Scadență"
+      },
+      "data_emiterii": {
+        "name": "Data emiterii"
+      },
+      "numar_factura": {
+        "name": "Număr factură"
+      },
+      "numar_facturi": {
+        "name": "Număr facturi"
+      },
+      "sold_de_plata": {
+        "name": "Sold de plată"
+      },
+      "facturi_neplatite": {
+        "name": "Facturi neplătite"
+      },
+      "index_curent": {
+        "name": "Index curent"
+      },
+      "consum_ultima_luna": {
+        "name": "Consum ultima lună"
+      }
     }
   }
 }
