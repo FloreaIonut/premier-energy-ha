@@ -157,11 +157,12 @@ def normalize_readings(readings: list[dict]) -> list[dict[str, Any]]:
     """Istoric autocitiri index: {data, index, transmis, status}, cele mai noi întâi."""
     items = []
     for r in readings or []:
+        src = str(r.get("source") or "")
         items.append(
             {
                 "data": (str(r.get("timestamp") or ""))[:10] or None,
-                "index": r.get("value"),
-                "transmis": r.get("source"),
+                "index": r.get("reading"),
+                "transmis": "Portal web" if src == "portalClienti" else src or None,
                 "status": r.get("status"),
             }
         )
